@@ -1,7 +1,7 @@
 """Fig. 6 수정안.
 
-(a) 과잉공기율 응답, (b) 기수분리기 출구 온도 바이어스 응답,
-(c) BZR에 따른 순효율 변화, (d) 온도 바이어스에 따른 분무비.
+(a) 과잉공기율 응답, (b) BZR에 따른 순효율 변화,
+(c) 온도 바이어스에 따른 순효율, (d) 온도 바이어스에 따른 분무비.
 
 사용법: python plot_fig6.py [Figure_6_data.csv] [BZR_20_50_100_results.csv] [bias_spray_results.csv]
 출력: fig6_revised.png / .pdf / .svg (스크립트와 같은 폴더)
@@ -51,7 +51,7 @@ BZR_REP = 0.95
 
 fig, ((ax_a, ax_b), (ax_c, ax_d)) = plt.subplots(
     2, 2, figsize=(7.2, 6.2),
-    gridspec_kw=dict(width_ratios=[1, 1.15], wspace=0.42, hspace=0.42),
+    gridspec_kw=dict(width_ratios=[1, 1], wspace=0.42, hspace=0.42),
 )
 
 # ---------------------------------------------------------------- (a)
@@ -79,55 +79,56 @@ ax_a.text(0.03, 0.04, "● 계산점 (실선: 하한 이상)\n○ 계산점 (점
           transform=ax_a.transAxes, fontsize=7, color=MUTED, va="bottom", ha="left",
           linespacing=1.35)
 
-# ---------------------------------------------------------------- (b)
+# ---------------------------------------------------------------- (c) 바이어스–순효율
 for name, c in CASES.items():
     sub = df[df.panel.str.startswith(c["panel"]) & df.series.str.startswith("제약 충족")]
     col = sub[(sub.x - c["xmin"]).abs() < 1e-3].sort_values("y")
     eta_rep = col.loc[(col.y - c["dt_rep"]).abs().idxmin(), "z"]
     d = (col.z - eta_rep) * 1e3  # 10^-3 %p
-    ax_b.plot(col.y, d, "-o", color=c["color"], lw=1.6, ms=4.5, mec="white", mew=0.8)
-    ax_b.plot(c["dt_rep"], 0, "s", ms=7.5, mfc="white", mec=c["color"], mew=1.6, zorder=5)
+    ax_c.plot(col.y, d, "-o", color=c["color"], lw=1.6, ms=4.5, mec="white", mew=0.8)
+    ax_c.plot(c["dt_rep"], 0, "s", ms=7.5, mfc="white", mec=c["color"], mew=1.6, zorder=5)
     best = col.loc[col.z.idxmax()]
-    ax_b.plot(best.y, (best.z - eta_rep) * 1e3, "*", ms=11, mfc="white", mec=c["color"],
+    ax_c.plot(best.y, (best.z - eta_rep) * 1e3, "*", ms=11, mfc="white", mec=c["color"],
               mew=1.2, zorder=6)
     right = c["pct"] == 100  # 100%는 y축에 붙으므로 별 오른쪽에 표기
-    ax_b.annotate(name, (best.y, (best.z - eta_rep) * 1e3),
+    ax_c.annotate(name, (best.y, (best.z - eta_rep) * 1e3),
                   xytext=(9, 0) if right else (0, 9), textcoords="offset points",
                   ha="left" if right else "center", va="center" if right else "bottom",
                   fontsize=8, color=TEXT)
 
-ax_b.axhline(0, color=MUTED, lw=0.8, zorder=1)
-ax_b.set_xlim(-19, -1)
-ax_b.set_ylim(-5, 10.5)
-ax_b.set_yticks(range(-4, 11, 2))
-ax_b.set_xticks([-18, -16, -14, -12, -10, -8, -6, -4, -2])
-ax_b.set_xlabel("기수분리기 출구 온도 바이어스 ΔT (K)")
-ax_b.set_ylabel("대표점 대비 순효율 차 (10⁻³ %p)")
-ax_b.set_title("(b) 온도 바이어스 응답 (과잉공기율 하한, BZR 0.95)", loc="left", color=TEXT)
+ax_c.axhline(0, color=MUTED, lw=0.8, zorder=1)
+ax_c.set_xlim(-19, -1)
+ax_c.set_ylim(-5, 10.5)
+ax_c.set_yticks(range(-4, 11, 2))
+ax_c.set_xticks(range(-18, -1, 2))
+ax_c.set_xticklabels([f"−{-v}" if v % 4 == 2 else "" for v in range(-18, -1, 2)])
+ax_c.set_xlabel("기수분리기 출구 온도 바이어스 ΔT (K)")
+ax_c.set_ylabel("대표점 대비 순효율 차 (10⁻³ %p)")
+ax_c.set_title("(c) 온도 바이어스 응답: 순효율", loc="left", color=TEXT)
 
-# ---------------------------------------------------------------- (c) BZR
-ax_c.axvspan(BZR_REP, 1.0125, color="#f0efeb", zorder=0, lw=0)
-ax_c.axvline(BZR_REP, color=MUTED, lw=0.8, ls=(0, (3, 2)), zorder=1)
-ax_c.set_xlim(0.8375, 1.0125)
-ax_c.set_xticks([0.85, 0.875, 0.9, 0.925, 0.95, 0.975, 1.0])
-ax_c.set_xticklabels(["0.85", "", "0.90", "", "0.95", "", "1.00"])
-ax_c.set_xlabel("버너존 공기비 BZR (–)")
-ax_c.text(0.9815, 0.03, "민감도\n(BZR > 0.95)", transform=ax_c.get_xaxis_transform(),
+# ---------------------------------------------------------------- (b) BZR
+ax_b.axvspan(BZR_REP, 1.0125, color="#f0efeb", zorder=0, lw=0)
+ax_b.axvline(BZR_REP, color=MUTED, lw=0.8, ls=(0, (3, 2)), zorder=1)
+ax_b.set_xlim(0.8375, 1.0125)
+ax_b.set_xticks([0.85, 0.875, 0.9, 0.925, 0.95, 0.975, 1.0])
+ax_b.set_xticklabels(["0.85", "", "0.90", "", "0.95", "", "1.00"])
+ax_b.set_xlabel("버너존 공기비 BZR (–)")
+ax_b.text(0.9815, 0.03, "민감도\n(BZR > 0.95)", transform=ax_b.get_xaxis_transform(),
           ha="center", va="bottom", fontsize=7, color=MUTED)
 
 for name, c in CASES.items():
     g = bzr[bzr.NH3_LHV_pct == c["pct"]].sort_values("BZR")
-    ax_c.plot(g.BZR, g.delta_LHV_vs_BZR095_pp * 1e3, "-o", color=c["color"], lw=1.6,
+    ax_b.plot(g.BZR, g.delta_LHV_vs_BZR095_pp * 1e3, "-o", color=c["color"], lw=1.6,
               ms=4.5, mec="white", mew=0.8)
-    ax_c.plot(BZR_REP, 0, "s", ms=7, mfc="white", mec=c["color"], mew=1.6, zorder=5)
+    ax_b.plot(BZR_REP, 0, "s", ms=7, mfc="white", mec=c["color"], mew=1.6, zorder=5)
 
 # BZR 1.00 값이 세 혼소율 모두 28–31이라 직접 라벨이 겹치므로 범례로 대신
-ax_c.legend([plt.Line2D([], [], color=c["color"], lw=1.6, marker="o", ms=4, mec="white")
+ax_b.legend([plt.Line2D([], [], color=c["color"], lw=1.6, marker="o", ms=4, mec="white")
              for c in CASES.values()], list(CASES), loc="upper left", fontsize=7,
             frameon=False, handlelength=1.8)
-ax_c.axhline(0, color=MUTED, lw=0.8, zorder=1)
-ax_c.set_ylabel("BZR 0.95 대비 순효율 차 (10⁻³ %p)")
-ax_c.set_title("(c) BZR 응답: 순효율", loc="left", color=TEXT)
+ax_b.axhline(0, color=MUTED, lw=0.8, zorder=1)
+ax_b.set_ylabel("BZR 0.95 대비 순효율 차 (10⁻³ %p)")
+ax_b.set_title("(b) BZR 응답: 순효율", loc="left", color=TEXT)
 
 # ---------------------------------------------------------------- (d) 바이어스–분무비
 ax_d.axhspan(6.0, 7.0, color="#dcdad3", alpha=0.6, zorder=0, lw=0)
@@ -140,23 +141,24 @@ for name, c in CASES.items():
     rep = g[g["채택"] == "채택"].iloc[0]
     ax_d.plot(rep["Enthalpy_bias K"], rep["주증기 대비 %"], "s", ms=7.5, mfc="white",
               mec=c["color"], mew=1.6, zorder=5)
-    lo = g.iloc[0]  # 가장 낮은 바이어스 = (b)의 격자 최고효율점
+    lo = g.iloc[0]  # 가장 낮은 바이어스 = (c)의 격자 최고효율점
     ax_d.plot(lo["Enthalpy_bias K"], lo["주증기 대비 %"], "*", ms=11, mfc="white",
               mec=c["color"], mew=1.2, zorder=6)
     top = g.iloc[-1]
     ax_d.annotate(name, (top["Enthalpy_bias K"], top["주증기 대비 %"]), xytext=(0, 8),
                   textcoords="offset points", ha="center", va="bottom", fontsize=8, color=TEXT)
 
-ax_d.set_xlim(ax_b.get_xlim())
-ax_d.set_xticks(ax_b.get_xticks())
+ax_d.set_xlim(ax_c.get_xlim())
+ax_d.set_xticks(range(-18, -1, 2))
+ax_d.set_xticklabels([f"−{-v}" if v % 4 == 2 else "" for v in range(-18, -1, 2)])
 ax_d.set_ylim(-0.3, 10.8)
 ax_d.set_xlabel("기수분리기 출구 온도 바이어스 ΔT (K)")
 ax_d.set_ylabel("과열기 분무비 (주증기 대비, %)")
 ax_d.set_title("(d) 온도 바이어스 응답: 분무비", loc="left", color=TEXT)
-ax_d.text(0.97, 0.04, "□ 대표 운전점 · ☆ (b)의 격자 최고점",
+ax_d.text(0.97, 0.04, "□ 대표 운전점 · ☆ (c)의 격자 최고점",
           transform=ax_d.transAxes, ha="right", va="bottom", fontsize=7, color=MUTED)
-ax_b.text(0.97, 0.04, "□ 대표 운전점 (분무비 6–7%)\n☆ 제약 내 격자 최고점",
-          transform=ax_b.transAxes, ha="right", va="bottom", fontsize=7, color=MUTED)
+ax_c.text(0.97, 0.04, "□ 대표 운전점 (분무비 6–7%)\n☆ 제약 내 격자 최고점",
+          transform=ax_c.transAxes, ha="right", va="bottom", fontsize=7, color=MUTED)
 
 for ext in ("png", "pdf", "svg"):
     fig.savefig(HERE / f"fig6_revised.{ext}", dpi=400, bbox_inches="tight")
